@@ -30,3 +30,7 @@ chrono = { version = "0.4", features = ["serde"] } # 시간 처리
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# 의존성 버전 고정 (edition2024 호환 문제 해결)
+home = "=0.5.9"
+base64ct = "=1.6.0"

@@ -1,22 +1,7 @@
+# 개발용 - DB와 Redis만 실행 (백엔드는 로컬에서 cargo run)
 services:
-  backend:
-    container_name: JT-backend  
-    build: .
-    ports:
-      - "${PORT:-3000}:3000"
-    environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - JWT_SECRET=${JWT_SECRET}
-      - RUST_LOG=${RUST_LOG:-debug}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
   postgres:
-    container_name: JT-postgres  
+    container_name: JT-postgres-dev
     image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -33,7 +18,7 @@ services:
       retries: 5
 
   redis:
-    container_name: JT-redis  
+    container_name: JT-redis-dev
     image: redis:7
     ports:
       - "6379:6379"
