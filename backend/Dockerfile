@@ -1,30 +1,30 @@
 # Build stage
-FROM rust:1.84 AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
-# 의존성 캐싱을 위해 먼저 Cargo 파일만 복사
-COPY Cargo.toml Cargo.lock* ./
+# Git 설치 (go mod에서 필요할 수 있음)
+RUN apk add --no-cache git
 
-# 빈 src 생성 후 의존성만 빌드 (캐싱 최적화)
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
-RUN rm -rf src
+# 의존성 캐싱
+COPY go.mod ./
+RUN go mod download || true
 
-# 실제 소스 복사 후 빌드
-COPY src ./src
-RUN touch src/main.rs && cargo build --release
+# 소스 복사 및 의존성 정리
+COPY . .
+RUN go mod tidy
+
+# 빌드
+RUN CGO_ENABLED=0 GOOS=linux go build -o backend ./cmd/server
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM alpine:latest
 
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/backend /app/backend
+COPY --from=builder /app/backend .
 
 EXPOSE 3000
 

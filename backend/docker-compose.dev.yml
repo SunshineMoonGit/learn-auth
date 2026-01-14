@@ -1,7 +1,6 @@
-# 개발용 - DB와 Redis만 실행 (백엔드는 로컬에서 cargo run)
 services:
   postgres:
-    container_name: JT-postgres-dev
+    container_name: JT-postgres  
     image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -18,7 +17,7 @@ services:
       retries: 5
 
   redis:
-    container_name: JT-redis-dev
+    container_name: JT-redis  
     image: redis:7
     ports:
       - "6379:6379"
