@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 주식현재가 회원사 종목매매동향 API
+// 주식현재가 회원사 종목매매동향 API (당일 상위 5개 창구)
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const stockCode = searchParams.get('code');
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const appKey = process.env.NEXT_PUBLIC_KIS_APP_KEY || '';
     const appSecret = process.env.NEXT_PUBLIC_KIS_APP_SECRET || '';
 
-    // Authorization 헤더에서 토큰 확인 (프론트엔드에서 전달받은 토큰)
+    // Authorization 헤더에서 토큰 확인
     const authHeader = request.headers.get('Authorization');
     let accessToken: string | null = null;
 
@@ -59,11 +59,13 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // 회원사 매매동향 조회
+    // 회원사 매매동향 조회 (당일 기준)
     try {
         const url = new URL(`${baseUrl}/uapi/domestic-stock/v1/quotations/inquire-member`);
         url.searchParams.set('FID_COND_MRKT_DIV_CODE', 'J');
         url.searchParams.set('FID_INPUT_ISCD', stockCode);
+
+        console.log(`API 요청: ${url.toString()} (TR_ID: FHKST01010600)`);
 
         const response = await fetch(url.toString(), {
             method: 'GET',
@@ -72,12 +74,13 @@ export async function GET(request: NextRequest) {
                 'authorization': `Bearer ${accessToken}`,
                 'appkey': appKey,
                 'appsecret': appSecret,
-                'tr_id': 'FHKST01010600',
+                'tr_id': 'FHKST01010600', // 주식현재가 회원사 종목매매동향
             },
         });
 
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('API Error:', errorText);
             return NextResponse.json(
                 { error: `회원사 데이터 조회 실패: ${errorText}` },
                 { status: response.status }
@@ -94,7 +97,6 @@ export async function GET(request: NextRequest) {
         }
         const brokers: BrokerData[] = [];
 
-        // output 객체에서 데이터 추출 (필드명이 seln_mbcr_name1~5, shnu_mbcr_name1~5 형태)
         const output = data.output;
 
         if (output) {
@@ -102,37 +104,45 @@ export async function GET(request: NextRequest) {
             for (let i = 1; i <= 5; i++) {
                 // 매도 상위 창구
                 const sellName = output[`seln_mbcr_name${i}`];
-                const sellVol = parseInt(output[`seln_vol${i}`] || output[`total_seln_qty${i}`] || '0', 10);
+                // 주의: 필드명이 total_seln_qty 또는 seln_vol 등일 수 있음. 문서 기준 seln_vol 없음 -> total_seln_qty 사용
+                const sellVol = parseInt(output[`total_seln_qty${i}`] || output[`seln_vol${i}`] || '0', 10);
 
                 // 매수 상위 창구
                 const buyName = output[`shnu_mbcr_name${i}`];
-                const buyVol = parseInt(output[`shnu_vol${i}`] || output[`total_shnu_qty${i}`] || '0', 10);
+                const buyVol = parseInt(output[`total_shnu_qty${i}`] || output[`shnu_vol${i}`] || '0', 10);
 
                 // 매도 창구 추가
                 if (sellName) {
-                    const existing = brokers.find(b => b.name === sellName);
-                    if (existing) {
-                        existing.sellVol += sellVol;
-                    } else {
-                        brokers.push({
-                            name: sellName,
-                            buyVol: 0,
-                            sellVol: sellVol,
-                        });
+                    // 공백 제거 및 유효성 검사
+                    const cleanName = sellName.trim();
+                    if (cleanName) {
+                        const existing = brokers.find(b => b.name === cleanName);
+                        if (existing) {
+                            existing.sellVol += sellVol;
+                        } else {
+                            brokers.push({
+                                name: cleanName,
+                                buyVol: 0,
+                                sellVol: sellVol,
+                            });
+                        }
                     }
                 }
 
                 // 매수 창구 추가
                 if (buyName) {
-                    const existing = brokers.find(b => b.name === buyName);
-                    if (existing) {
-                        existing.buyVol += buyVol;
-                    } else {
-                        brokers.push({
-                            name: buyName,
-                            buyVol: buyVol,
-                            sellVol: 0,
-                        });
+                    const cleanName = buyName.trim();
+                    if (cleanName) {
+                        const existing = brokers.find(b => b.name === cleanName);
+                        if (existing) {
+                            existing.buyVol += buyVol;
+                        } else {
+                            brokers.push({
+                                name: cleanName,
+                                buyVol: buyVol,
+                                sellVol: 0,
+                            });
+                        }
                     }
                 }
             }

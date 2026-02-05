@@ -484,31 +484,30 @@ export default function MaejipbiApp() {
                   placeholder="예: 005930"
                   className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
+                <p className="mt-1 text-[10px] text-blue-600 font-semibold">※ 실시간 당일 데이터로 분석됩니다.</p>
               </div>
               <div>
-                <label htmlFor="search-start" className="block text-xs font-medium text-slate-500 mb-1">
-                  시작일
+                <label htmlFor="search-start" className="block text-xs font-medium text-slate-400 mb-1">
+                  시작일 (미지원)
                 </label>
                 <input
                   id="search-start"
                   type="text"
                   value={searchStartDate}
-                  onChange={(e) => setSearchStartDate(e.target.value)}
-                  placeholder="YYYYMMDD"
-                  className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  disabled
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-400 rounded px-3 py-2 text-sm outline-none cursor-not-allowed"
                 />
               </div>
               <div>
-                <label htmlFor="search-end" className="block text-xs font-medium text-slate-500 mb-1">
-                  종료일
+                <label htmlFor="search-end" className="block text-xs font-medium text-slate-400 mb-1">
+                  종료일 (미지원)
                 </label>
                 <input
                   id="search-end"
                   type="text"
                   value={searchEndDate}
-                  onChange={(e) => setSearchEndDate(e.target.value)}
-                  placeholder="YYYYMMDD"
-                  className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  disabled
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-400 rounded px-3 py-2 text-sm outline-none cursor-not-allowed"
                 />
               </div>
               <div className="flex items-end gap-2">
@@ -805,6 +804,7 @@ export default function MaejipbiApp() {
                   </table>
                 </div>
                 <p className="mt-3 text-xs text-slate-400">
+                  <span className="text-blue-600 font-bold mr-2">ℹ️ 오늘(실시간) 상위 창구 데이터입니다.</span>
                   {stockInfo.price > 0 && (
                     <span className="text-slate-600 font-medium mr-2">현재가: {stockInfo.price.toLocaleString()}원 | </span>
                   )}

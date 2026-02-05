@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 주식기본조회 API (종목명, 시가총액, 상장주식수, 현재가)
+// 주식현재가 시세 API (정확한 현재가, 시가총액, 상장주식수 조회)
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const stockCode = searchParams.get('code');
@@ -57,11 +57,11 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // 주식기본조회 API 호출
+    // 주식현재가 시세 API 호출
     try {
-        const url = new URL(`${baseUrl}/uapi/domestic-stock/v1/quotations/search-stock-info`);
-        url.searchParams.set('PRDT_TYPE_CD', '300');
-        url.searchParams.set('PDNO', stockCode);
+        const url = new URL(`${baseUrl}/uapi/domestic-stock/v1/quotations/inquire-price`);
+        url.searchParams.set('FID_COND_MRKT_DIV_CODE', 'J');
+        url.searchParams.set('FID_INPUT_ISCD', stockCode);
 
         const response = await fetch(url.toString(), {
             method: 'GET',
@@ -70,14 +70,14 @@ export async function GET(request: NextRequest) {
                 'authorization': `Bearer ${accessToken}`,
                 'appkey': appKey,
                 'appsecret': appSecret,
-                'tr_id': 'CTPF1002R',
+                'tr_id': 'FHKST01010100', // 주식현재가 시세 TR ID
             },
         });
 
         if (!response.ok) {
             const errorText = await response.text();
             return NextResponse.json(
-                { error: `주식정보 조회 실패: ${errorText}` },
+                { error: `시세 정보 조회 실패: ${errorText}` },
                 { status: response.status }
             );
         }
@@ -93,24 +93,19 @@ export async function GET(request: NextRequest) {
         }
 
         // 필요한 데이터 추출
-        // lstg_stqt: 상장주식수 (lstg_stkn이 아님)
-        // sbst_pric: 대용가격 (현재가로 사용)
-        // hts_avls: HTS 시가총액 (없으면 계산)
-        const listedShares = parseInt(output.lstg_stqt || output.lstg_stkn || '0', 10);
-        const currentPrice = parseInt(output.sbst_pric || output.thdt_clpr || '0', 10);
-        let marketCap = parseInt(output.hts_avls || '0', 10);
-
-        // 시가총액이 0이면 (현재가 × 상장주식수 / 1억)으로 계산
-        if (marketCap === 0 && currentPrice > 0 && listedShares > 0) {
-            marketCap = Math.floor((currentPrice * listedShares) / 100000000);
-        }
+        // stck_prpr: 주식 현재가
+        // lstn_stcn: 상장 주수
+        // hts_avls: HTS 시가총액 (단위: 억 원)
+        const currentPrice = parseInt(output.stck_prpr || '0', 10);
+        const listedShares = parseInt(output.lstn_stcn || '0', 10);
+        const marketCap = parseInt(output.hts_avls || '0', 10);
 
         const stockInfo = {
-            name: output.prdt_abrv_name || output.prdt_name || '알 수 없음', // 종목명
-            currentPrice: currentPrice, // 현재가/대용가
-            marketCap: marketCap, // 시가총액 (억 원)
-            listedShares: listedShares, // 상장주식수
-            floatingRatio: parseFloat(output.frgn_hldn_rt || '0'), // 외국인 보유율 (참고용)
+            name: output.bstp_kor_isnm || `종목: ${stockCode}`, // 이 API는 종목명을 직접 주지 않으므로 업종명이나 코드로 대체
+            currentPrice: currentPrice,
+            marketCap: marketCap,
+            listedShares: listedShares,
+            floatingRatio: parseFloat(output.hts_frgn_ehrt || '0'), // 외국인 소진율을 참고용으로 사용
         };
 
         return NextResponse.json({
