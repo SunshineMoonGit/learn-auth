@@ -51,7 +51,7 @@ class KISApiService {
   private tokenExpiry: Date | null = null;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_KIS_BASE_URL || 'https://openapi.koreainvestment.com:9443';
+    this.baseUrl = process.env.NEXT_PUBLIC_KIS_BASE_URL || 'https://openapivts.koreainvestment.com:29443';
     this.appKey = process.env.NEXT_PUBLIC_KIS_APP_KEY || '';
     this.appSecret = process.env.NEXT_PUBLIC_KIS_APP_SECRET || '';
 
@@ -355,6 +355,7 @@ export default function MaejipbiApp() {
       newFloatingShares = 10000000;
       setCalcHelper({ issuedShares: 0, floatingRatio: 0 });
 
+      
       newBrokers = [
         { name: '모건스탠리', buyVol: 1500000, sellVol: 50000 },
         { name: 'JP모건', buyVol: 300000, sellVol: 10000 },
@@ -513,7 +514,7 @@ export default function MaejipbiApp() {
               <div className="flex items-end gap-2">
                 <button
                   onClick={handleSearch}
-                  disabled={isLoading}
+                  disabled={isLoading || !isApiConfigured}
                   className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
